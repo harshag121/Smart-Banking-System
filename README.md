@@ -244,7 +244,7 @@ Smart-Banking-System/
 
 ## Summary
 
-You now have a clean, demo-ready banking assistant that:
+A  clean, demo-ready banking assistant that:
 - runs through FastAPI with Dialogflow-first chat support
 - supports Dialogflow webhook fulfillment integration
 - is testable, deployable, and easy to showcase.
