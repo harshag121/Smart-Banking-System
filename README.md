@@ -119,6 +119,22 @@ GOOGLE_APPLICATION_CREDENTIALS=C:\path\to\service-account.json
 
 Then restart backend.
 
+### Dialogflow setup (step-by-step)
+
+1. Create/select a Google Cloud project.
+2. Enable APIs:
+   - Dialogflow API
+   - IAM Service Account Credentials API
+3. Create a service account and grant **Dialogflow API Client** role.
+4. Create and download JSON key for that service account.
+5. Put JSON path into `GOOGLE_APPLICATION_CREDENTIALS` in `.env`.
+6. In Dialogflow ES, create intents (Welcome, Check Balance, Transfer, Confirm, Transactions, Help).
+7. Start backend and test with:
+
+```bash
+curl -X POST http://localhost:8000/api/chat -H "Content-Type: application/json" -d "{\"message\":\"check my balance\",\"session_id\":\"demo1\"}"
+```
+
 ### Frontend
 Open:
 - `frontend/index.html` directly, or
@@ -156,6 +172,35 @@ This repo includes `render.yaml`.
 After deployment:
 - API root: `https://<your-service>.onrender.com/`
 - UI: `https://<your-service>.onrender.com/ui`
+
+### Render environment variables for Dialogflow
+
+Set these in Render service settings:
+
+- `DIALOGFLOW_ENABLED=true`
+- `DIALOGFLOW_PROJECT_ID=<your-project-id>`
+- `DIALOGFLOW_LANGUAGE_CODE=en`
+- `GOOGLE_APPLICATION_CREDENTIALS=<path in container OR use secret-file strategy>`
+
+If you cannot mount a file path on Render, use a secret file approach (recommended) and point `GOOGLE_APPLICATION_CREDENTIALS` to that mounted file path.
+
+---
+
+## Free tier / cost notes
+
+For demo and interview traffic, this setup is typically free:
+
+- **Render**: free web service tier (sleeps when idle, cold starts).
+- **Dialogflow ES**: free quota available.
+- **Google Cloud project/service account**: free to create.
+
+You may be charged only if usage exceeds free limits.
+
+Recommended safety:
+
+- Set GCP billing budget + alert.
+- Keep app on demo-level traffic.
+- Disable service when not in use.
 
 ---
 
@@ -202,6 +247,6 @@ Smart-Banking-System/
 ## Summary
 
 You now have a clean, demo-ready banking assistant that:
-- works directly through FastAPI
-- optionally supports Dialogflow webhook integration
+- runs through FastAPI with Dialogflow-first chat support
+- supports Dialogflow webhook fulfillment integration
 - is testable, deployable, and easy to showcase.
