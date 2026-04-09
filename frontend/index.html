@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#1e3c72">
+    <title>Demo Bank - AI Assistant</title>
+    <style>
+        :root {
+            --bg-start: #14213d;
+            --bg-end: #3a0ca3;
+            --surface: #ffffff;
+            --surface-soft: #f5f7fb;
+            --brand: #1d4ed8;
+            --brand-dark: #1e3a8a;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #dbe3ef;
+            --ok: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(150deg, var(--bg-start), var(--bg-end));
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 480px;
+            height: min(100vh - 24px, 820px);
+            background: var(--surface);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(7, 12, 35, 0.35);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #0f2f6d, #1d4ed8);
+            color: #fff;
+            padding: 18px 16px 14px;
+        }
+
+        .chat-header h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .chat-header p {
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #dce8ff;
+            font-size: 0.85rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--ok);
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        .quick-actions {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 12px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .quick-btn {
+            border: 1px solid #c8d7f5;
+            background: #eff4ff;
+            color: #1e3a8a;
+            font-size: 0.82rem;
+            font-weight: 600;
+            border-radius: 999px;
+            padding: 9px 12px;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .quick-btn:active {
+            transform: scale(0.98);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--surface-soft);
+            padding: 14px 12px 10px;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 10px;
+            animation: fadeIn 0.18s ease-out;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 15px;
+            flex: 0 0 auto;
+        }
+
+        .message.bot .avatar {
+            background: #dbeafe;
+        }
+
+        .message.user .avatar {
+            background: #1d4ed8;
+            color: #fff;
+        }
+
+        .message-content {
+            max-width: 83%;
+            line-height: 1.45;
+            font-size: 0.92rem;
+            border-radius: 16px;
+            padding: 11px 12px;
+            word-wrap: break-word;
+        }
+
+        .message.bot .message-content {
+            background: #fff;
+            border: 1px solid #e6edf9;
+            border-top-left-radius: 6px;
+        }
+
+        .message.user .message-content {
+            color: #fff;
+            background: linear-gradient(135deg, #2563eb, #1e3a8a);
+            border-top-right-radius: 6px;
+        }
+
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 2px 0 12px 40px;
+        }
+
+        .suggestion-btn {
+            border: 1px solid #bfd1f6;
+            background: #fff;
+            color: #1e40af;
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .typing {
+            margin: 2px 0 12px 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #fff;
+            border: 1px solid #e6edf9;
+            border-radius: 14px;
+            padding: 9px 12px;
+        }
+
+        .typing-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #94a3b8;
+            animation: typing 1.2s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); opacity: 0.35; }
+            50% { transform: translateY(-5px); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-input {
+            background: #fff;
+            border-top: 1px solid var(--border);
+            padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #userInput {
+            flex: 1;
+            border: 2px solid #dbe6ff;
+            border-radius: 999px;
+            padding: 12px 14px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        #userInput:focus {
+            border-color: #3b82f6;
+        }
+
+        #sendBtn {
+            border: none;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #2563eb, #1e3a8a);
+            color: #fff;
+            font-weight: 700;
+            padding: 11px 16px;
+            min-height: 44px;
+            cursor: pointer;
+        }
+
+        #sendBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error-banner {
+            display: none;
+            margin: 8px 12px 0;
+            border: 1px solid #fecaca;
+            background: #fff1f2;
+            color: #9f1239;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+
+        .error-banner.show {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 0;
+                align-items: stretch;
+            }
+
+            .chat-container {
+                max-width: none;
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .chat-header h1 {
+                font-size: 1.02rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>Demo Bank Assistant</h1>
+            <p><span class="status-dot"></span><span id="statusText">Online demo mode</span></p>
+        </div>
+
+        <div class="quick-actions">
+            <button class="quick-btn" onclick="sendQuick('Check my balance')">Balance</button>
+            <button class="quick-btn" onclick="sendQuick('Transfer 100 from checking to savings')">Transfer</button>
+            <button class="quick-btn" onclick="sendQuick('Show transactions')">History</button>
+            <button class="quick-btn" onclick="sendQuick('Help')">Help</button>
+        </div>
+
+        <div id="errorBanner" class="error-banner"></div>
+        <div class="chat-messages" id="chatMessages"></div>
+
+        <div class="chat-input">
+            <div class="input-container">
+                <input type="text" id="userInput" placeholder="Type your message..." onkeydown="handleKeyDown(event)" />
+                <button id="sendBtn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const apiOverride = urlParams.get("api");
+        const defaultApi = window.location.protocol === "file:" ? "http://127.0.0.1:8000" : window.location.origin;
+
+        const API_CONFIG = {
+            apiUrl: apiOverride || defaultApi,
+            chatEndpoint: "/api/chat"
+        };
+
+        let sessionId = "demo-session-" + Date.now();
+        let loading = false;
+
+        const chatMessages = document.getElementById("chatMessages");
+        const userInput = document.getElementById("userInput");
+        const sendBtn = document.getElementById("sendBtn");
+        const errorBanner = document.getElementById("errorBanner");
+        const statusText = document.getElementById("statusText");
+
+        window.onload = function () {
+            statusText.textContent = "Connected to " + API_CONFIG.apiUrl.replace(/^https?:\/\//, "");
+            addMessage("bot", "Welcome to Demo Bank!\n\nI can help with:\n• Check balances\n• Transfer money\n• View recent transactions\n\nHow can I help you today?");
+            showSuggestions(["Check Balance", "Transfer Money", "Transactions", "Help"]);
+            userInput.focus();
+        };
+
+        function handleKeyDown(event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function setLoading(isLoading) {
+            loading = isLoading;
+            sendBtn.disabled = isLoading;
+            sendBtn.textContent = isLoading ? "Sending..." : "Send";
+            userInput.disabled = isLoading;
+        }
+
+        function showError(text) {
+            errorBanner.textContent = text;
+            errorBanner.classList.add("show");
+        }
+
+        function clearError() {
+            errorBanner.textContent = "";
+            errorBanner.classList.remove("show");
+        }
+
+        function sendQuick(text) {
+            if (loading) return;
+            userInput.value = text;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message || loading) return;
+
+            clearError();
+            addMessage("user", message);
+            userInput.value = "";
+            showTyping();
+            setLoading(true);
+
+            try {
+                const response = await fetch(API_CONFIG.apiUrl + API_CONFIG.chatEndpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: message, session_id: sessionId })
+                });
+
+                if (!response.ok) {
+                    throw new Error("API error " + response.status);
+                }
+
+                const data = await response.json();
+                hideTyping();
+                addMessage("bot", data.text || "No response text returned.");
+                if (Array.isArray(data.suggestions) && data.suggestions.length) {
+                    showSuggestions(data.suggestions);
+                }
+            } catch (error) {
+                hideTyping();
+                showError("Unable to reach backend. Open with ?api=https://your-backend-url if hosted separately.");
+                addMessage("bot", "I could not connect to the API at " + API_CONFIG.apiUrl + ". Please try again.");
+                console.error(error);
+            } finally {
+                setLoading(false);
+                userInput.focus();
+            }
+        }
+
+        function addMessage(sender, text) {
+            const row = document.createElement("div");
+            row.className = "message " + sender;
+
+            const avatar = document.createElement("div");
+            avatar.className = "avatar";
+            avatar.textContent = sender === "bot" ? "B" : "U";
+
+            const bubble = document.createElement("div");
+            bubble.className = "message-content";
+            bubble.innerHTML = escapeHtml(text)
+                .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                .replace(/\n/g, "<br>");
+
+            if (sender === "bot") {
+                row.appendChild(avatar);
+                row.appendChild(bubble);
+            } else {
+                row.appendChild(bubble);
+                row.appendChild(avatar);
+            }
+
+            chatMessages.appendChild(row);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showSuggestions(suggestions) {
+            const old = chatMessages.querySelector(".suggestions:last-of-type");
+            if (old) old.remove();
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "suggestions";
+
+            suggestions.forEach((text) => {
+                const btn = document.createElement("button");
+                btn.className = "suggestion-btn";
+                btn.textContent = typeof text === "string" ? text : String(text);
+                btn.onclick = () => sendQuick(btn.textContent);
+                wrapper.appendChild(btn);
+            });
+
+            chatMessages.appendChild(wrapper);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTyping() {
+            hideTyping();
+            const typing = document.createElement("div");
+            typing.className = "typing";
+            typing.id = "typingIndicator";
+            typing.innerHTML = "<div class='typing-dot'></div><div class='typing-dot'></div><div class='typing-dot'></div>";
+            chatMessages.appendChild(typing);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTyping() {
+            const typing = document.getElementById("typingIndicator");
+            if (typing) typing.remove();
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
