@@ -1,4 +1,5 @@
 import re
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -368,6 +369,73 @@ def parse_transfer_message(message: str) -> Dict:
     }
 
 
+def is_dialogflow_enabled() -> bool:
+    """Check if Dialogflow detectIntent mode is enabled."""
+    return os.getenv("DIALOGFLOW_ENABLED", "false").strip().lower() == "true"
+
+
+def call_dialogflow_detect_intent(message: str, session_id: str) -> Dict[str, Any]:
+    """
+    Send user text to Dialogflow detectIntent and return normalized chat payload.
+    Requires DIALOGFLOW_PROJECT_ID and valid Google credentials.
+    """
+    project_id = os.getenv("DIALOGFLOW_PROJECT_ID", "").strip()
+    language_code = os.getenv("DIALOGFLOW_LANGUAGE_CODE", "en").strip() or "en"
+
+    if not project_id:
+        raise HTTPException(
+            status_code=500,
+            detail="Dialogflow is enabled but DIALOGFLOW_PROJECT_ID is not configured.",
+        )
+
+    credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "").strip()
+
+    try:
+        from google.cloud import dialogflow_v2 as dialogflow
+        from google.oauth2 import service_account
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Dialogflow SDK is not installed. Install dependencies from requirements.txt.",
+        ) from exc
+
+    try:
+        if credentials_path:
+            credentials = service_account.Credentials.from_service_account_file(
+                credentials_path
+            )
+            sessions_client = dialogflow.SessionsClient(credentials=credentials)
+        else:
+            sessions_client = dialogflow.SessionsClient()
+
+        session = sessions_client.session_path(project_id, session_id)
+        text_input = dialogflow.TextInput(text=message, language_code=language_code)
+        query_input = dialogflow.QueryInput(text=text_input)
+        response = sessions_client.detect_intent(
+            request={"session": session, "query_input": query_input}
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Dialogflow detectIntent failed: {str(exc)}",
+        ) from exc
+
+    result = response.query_result
+    fulfillment_text = result.fulfillment_text or "I processed your request."
+    suggestions: List[str] = []
+
+    for message_obj in result.fulfillment_messages:
+        if message_obj.quick_replies and message_obj.quick_replies.quick_replies:
+            suggestions.extend(list(message_obj.quick_replies.quick_replies))
+
+    return {
+        "text": fulfillment_text,
+        "suggestions": suggestions,
+        "session_id": session_id,
+        "intent": result.intent.display_name if result.intent else "",
+    }
+
+
 # ==================== API Endpoints ====================
 
 
@@ -458,8 +526,12 @@ async def chat(request: Request):
     """
     try:
         body = await request.json()
-        message = body.get("message", "").lower()
+        raw_message = body.get("message", "")
+        message = raw_message.lower()
         session_id = body.get("session_id", "demo-session")
+
+        if is_dialogflow_enabled():
+            return call_dialogflow_detect_intent(raw_message, session_id)
 
         user = get_user("user-123")
         if not user:

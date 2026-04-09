@@ -6,7 +6,7 @@ It supports:
 - balance checks
 - transaction history
 - money transfer with confirmation
-- Dialogflow webhook integration (optional)
+- Dialogflow detectIntent + webhook integration
 
 ---
 
@@ -14,8 +14,8 @@ It supports:
 
 You migrated the backend flow from legacy Node/Firebase-style fulfillment to a modern FastAPI service and added:
 
-- A direct chat API (`POST /api/chat`) that works **without Dialogflow**
-- A Dialogflow-compatible webhook (`POST /webhook`)
+- A direct chat API (`POST /api/chat`) that can run in **Dialogflow-first mode**
+- A Dialogflow-compatible webhook (`POST /webhook`) for fulfillment
 - Demo banking data with checking/savings accounts and transaction history
 - Session-based pending transfer confirmation flow
 - Frontend chat interface for user interaction
@@ -26,19 +26,22 @@ You migrated the backend flow from legacy Node/Firebase-style fulfillment to a m
 
 ## Is chat using Dialogflow?
 
-**Short answer: it can, but it does not have to.**
+**Short answer: yes, when Dialogflow mode is enabled.**
 
 This project supports **two modes**:
 
-1. **Direct mode (current frontend path):**  
-   Frontend calls `POST /api/chat` directly.  
-   This mode does **not require Dialogflow**.
+1. **Dialogflow-first mode (recommended for evaluation):**  
+   Frontend still calls `POST /api/chat`, but backend forwards the text to Dialogflow `detectIntent` and returns Dialogflow response.
+   Enable it with:
+   - `DIALOGFLOW_ENABLED=true`
+   - `DIALOGFLOW_PROJECT_ID=<your-project-id>`
+   - `GOOGLE_APPLICATION_CREDENTIALS=<service-account-json-path>`
 
-2. **Dialogflow mode (optional):**  
+2. **Webhook mode:**  
    Dialogflow sends requests to `POST /webhook`.  
    FastAPI handles intents and returns Dialogflow-formatted fulfillment responses.
 
-So your deployed app can run fully even if Dialogflow is not connected.
+There is also a local fallback mode (when `DIALOGFLOW_ENABLED=false`) for offline demo/testing.
 
 ---
 
@@ -50,12 +53,12 @@ Browser UI (frontend/index.html)
         |  POST /api/chat
         v
 FastAPI backend (backend/main.py)
-  - intent detection / routing
-  - business handlers
+  - Dialogflow detectIntent client (if enabled)
+  - fallback local intent handlers
   - session transfer state
   - mock user/account data
         |
-        +--> optional Dialogflow webhook path: POST /webhook
+        +--> Dialogflow webhook path: POST /webhook
 ```
 
 ---
@@ -85,7 +88,7 @@ FastAPI backend (backend/main.py)
 - `GET /` - service status
 - `GET /health` - health check
 - `GET /ui` - serves chat UI file
-- `POST /api/chat` - direct chatbot endpoint
+- `POST /api/chat` - chat endpoint (Dialogflow detectIntent when enabled)
 - `POST /webhook` - Dialogflow fulfillment endpoint
 - `GET /api/user` - demo user/account info
 - `GET /api/user/transactions?account=checking` - account transactions
@@ -102,6 +105,19 @@ python main.py
 ```
 
 Backend runs on: `http://localhost:8000`
+
+### Enable Dialogflow-first mode
+
+Edit `backend/.env`:
+
+```env
+DIALOGFLOW_ENABLED=true
+DIALOGFLOW_PROJECT_ID=your-gcp-project-id
+DIALOGFLOW_LANGUAGE_CODE=en
+GOOGLE_APPLICATION_CREDENTIALS=C:\path\to\service-account.json
+```
+
+Then restart backend.
 
 ### Frontend
 Open:
@@ -146,6 +162,7 @@ After deployment:
 ## Tech stack
 
 - **Backend:** FastAPI, Uvicorn, Pydantic
+- **NLP:** Google Dialogflow CX/ES via detectIntent + webhook protocol
 - **Frontend:** HTML, CSS, Vanilla JavaScript
 - **Testing:** Pytest, FastAPI TestClient
 - **Containerization:** Docker + docker-compose
