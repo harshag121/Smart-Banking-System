@@ -24,9 +24,7 @@ You migrated the backend flow from legacy Node/Firebase-style fulfillment to a m
 
 ---
 
-## Is chat using Dialogflow?
 
-**Short answer: yes, when Dialogflow mode is enabled.**
 
 This project supports **two modes**:
 
