@@ -10,7 +10,7 @@ It supports:
 
 ---
 
-## What you built
+## What I have built
 
 You migrated the backend flow from legacy Node/Firebase-style fulfillment to a modern FastAPI service and added:
 
@@ -24,9 +24,7 @@ You migrated the backend flow from legacy Node/Firebase-style fulfillment to a m
 
 ---
 
-## Is chat using Dialogflow?
 
-**Short answer: yes, when Dialogflow mode is enabled.**
 
 This project supports **two modes**:
 
@@ -246,7 +244,7 @@ Smart-Banking-System/
 
 ## Summary
 
-You now have a clean, demo-ready banking assistant that:
+A  clean, demo-ready banking assistant that:
 - runs through FastAPI with Dialogflow-first chat support
 - supports Dialogflow webhook fulfillment integration
 - is testable, deployable, and easy to showcase.
